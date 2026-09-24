@@ -1,0 +1,17 @@
+{
+  "roles": {
+    "user": {
+      "permissions": [
+        "read:todos",
+        "create:todos",
+        "update:todos",
+        "delete:todos"
+      ]
+    },
+    "admin": {
+      "permissions": [
+        "*"
+      ]
+    }
+  }
+}
