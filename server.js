@@ -5,7 +5,7 @@ import dns from 'node:dns';
 import mongoose from 'mongoose';
 
 
-const requiredEnvVars = ['JWT_SECRET', 'MONGO_URI'];
+const requiredEnvVars = ['JWT_SECRET', 'MONGO_URI', 'BACKEND_API_URL'];
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 // Vérification des variables d'environnement critiques avant de démarrer l'application
 if (missingEnvVars.length > 0) {
