@@ -6,7 +6,7 @@ import {
   deleteTodo 
 } from '../controllers/todoController.js';
 import authMiddleware from '../middleware/auth.js';
-import { checkPermission } from '../middleware/rbac.js';
+
 
 const router = express.Router();
 
