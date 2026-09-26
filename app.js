@@ -6,10 +6,7 @@ import todoRoutes from './routes/todosRoute.js';
 
 const app = express();
 app.use(cors({
-  origin: 'https://todo-jwt-mongo.vercel.app' || 
-          'https://todo-jwt-mongo-git-main-zaidat.vercel.app' || 
-          'https://todo-jwt-mongo-4tyu6jjzj-zaidat.vercel.app',
-          
+  origin: 'https://frontend-mern-http-only.vercel.app',
 
   credentials: true
 }));
