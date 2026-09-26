@@ -6,7 +6,7 @@ import todoRoutes from './routes/todosRoute.js';
 
 const app = express();
 app.use(cors({
-  origin: 'https://frontend-mern-http-only.vercel.app',
+  origin: 'https://frontend-todo-lovat-gamma.vercel.app/',
 
   credentials: true
 }));
