@@ -2,32 +2,18 @@ import dotenv from 'dotenv';
 dotenv.config();
 import mongoose from 'mongoose';
 import app from './app.js';
+import dns from 'node:dns';
 
-const PORT = process.env.PORT;
-let isConnected = false;
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+dotenv.config();
 
-async function connectToDatabase() {
-  if (isConnected && mongoose.connection.readyState === 1) {
-    return;
-  }
+const PORT = process.env.PORT || 5000;
 
-  try {
-    const db = await mongoose.connect(process.env.MONGO_URI);
-    isConnected = db.connections[0].readyState === 1;
-    console.log('Connecté à MongoDB Atlas');
-  } catch (err) {
-    console.error('Erreur de connexion MongoDB :', err.message);
-    throw err;
-  }
-}
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('Connecté à MongoDB Atlas'))
+  .catch(err => console.error('Erreur de connexion MongoDB:', err));
 
-app.use(async (req, res, next) => {
-  try {
-    await connectToDatabase();
-    next();
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur de connexion à la base de données' });
-  }
-});
+app.listen(PORT, () => console.log(`Serveur démarré sur le port ${PORT}`));
 
 export default app;
