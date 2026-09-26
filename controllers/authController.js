@@ -29,7 +29,7 @@ export const register = async (req, res) => {
     return res.status(201).json({ message: 'Compte créé avec succès.' });
   } catch (err) {
     console.error('register error:', err);
-    return res.status(500).json({ message: 'Erreur serveur.' });
+    return res.status(500).json({ message: 'Erreur serveur.', error: err.message });
   }
 };
 
