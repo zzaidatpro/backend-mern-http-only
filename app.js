@@ -15,6 +15,14 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// test sur vercel pour vérifier si le serveur backend fonctionne correctement :
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Le serveur Backend Todo fonctionne parfaitement !',
+    status: 'OK'
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/todos', todoRoutes);
 
