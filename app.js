@@ -6,14 +6,18 @@ import todoRoutes from './routes/todosRoute.js';
 
 const app = express();
 app.use(cors({
-  origin: 'https://todo-jwt-mongo.vercel.app', 
+  origin: 'https://todo-jwt-mongo.vercel.app' || 
+          'https://todo-jwt-mongo-git-main-zaidat.vercel.app' || 
+          'https://todo-jwt-mongo-4tyu6jjzj-zaidat.vercel.app',
+          
+
   credentials: true
 }));
 
 app.use(cookieParser());
 app.use(express.json());
 
-app.use('/api/auth', authRoutes);
-app.use('/api/todos', todoRoutes);
+app.use('/auth', authRoutes);
+app.use('/todos', todoRoutes);
 
 export default app;
