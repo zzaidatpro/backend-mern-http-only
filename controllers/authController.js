@@ -2,11 +2,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-
 const COOKIE_OPTIONS = {
-  httpOnly: true, 
-  secure: process.env.NODE_ENV === 'production', 
-  sameSite: 'lax', 
+  httpOnly: true,
+  secure: true,
+  sameSite: 'none',
   maxAge: 24 * 60 * 60 * 1000,
 };
 
@@ -53,14 +52,13 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, role:user.role }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '1d' });
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
 
-    // Envoi du JWT via un cookie httpOnly
     res.cookie('token', token, COOKIE_OPTIONS);
 
-    // On renvoie uniquement les données utilisateur nécessaires
     return res.json({
       user: { id: user._id, email: user.email, role: user.role },
     });
@@ -72,11 +70,10 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    // Suppression du cookie en réinitialisant sa valeur et son expiration
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
     });
 
     return res.json({ message: 'Déconnexion réussie.' });
@@ -104,9 +101,9 @@ export const getMe = async (req, res) => {
     return res.status(500).json({ message: 'Erreur serveur lors de la récupération du profil.' });
   }
 };
+
 export const getAllUsers = async (req, res) => {
   try {
-    // $ne : "Not Equal" - filtre pour exclure le rôle 'admin'
     const users = await User.find({ role: { $ne: 'admin' } }).select('-password');
     return res.status(200).json(users);
   } catch (error) {
@@ -127,7 +124,6 @@ export const deleteUser = async (req, res) => {
         .json({ message: 'Utilisateur non trouvé.' });
     }
 
-    // Sécurité backend : Empêche la suppression d'un compte administrateur
     if (user.role === 'admin') {
       return res
         .status(403)
