@@ -16,6 +16,7 @@ async function connectDB() {
     cached.promise = mongoose
       .connect(process.env.MONGO_URI, {
         bufferCommands: false, // Désactive la mise en attente des requêtes si non connecté
+        serverSelectionTimeoutMS: 5000, // Timeout pour la sélection du serveur
       })
       .then((mongooseInstance) => {
         console.log('Connecté à MongoDB Atlas');
