@@ -11,6 +11,7 @@ const COOKIE_OPTIONS = {
 
 export const register = async (req, res) => {
   try {
+    console.log("Données reçues dans req.body :", req.body);
     const { email, password } = req.body;
 
     if (!email || !password) {
