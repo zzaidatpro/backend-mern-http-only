@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import {connectDB} from '../server.js';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -11,6 +12,7 @@ const COOKIE_OPTIONS = {
 
 export const register = async (req, res) => {
   try {
+    connectDB(); // Assurez-vous que la connexion à la base de données est établie
     console.log("Données reçues dans req.body :", req.body);
     const { email, password } = req.body;
 
@@ -36,6 +38,7 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
+    connectDB();
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -71,6 +74,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
+    connectDB();
     res.clearCookie('token', {
       httpOnly: true,
       secure: true,
@@ -86,6 +90,7 @@ export const logout = async (req, res) => {
 
 export const getMe = async (req, res) => {
   try {
+    connectDB();
     const userId = req.user?.id ?? req.user?._id;
     if (!userId) {
       return res.status(401).json({ message: 'Utilisateur non authentifié.' });
@@ -105,6 +110,7 @@ export const getMe = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
+    connectDB();
     const users = await User.find({ role: { $ne: 'admin' } }).select('-password');
     return res.status(200).json(users);
   } catch (error) {
@@ -117,6 +123,7 @@ export const getAllUsers = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
+    connectDB();
     const user = await User.findById(req.params.id);
 
     if (!user) {
