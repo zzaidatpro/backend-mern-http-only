@@ -14,9 +14,9 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // 2. Routes CRUD protégées 
-router.get('/', authMiddleware, getTodos);
-router.post('/', authMiddleware, createTodo);
-router.put('/:id', authMiddleware, updateTodo);
-router.delete('/:id', authMiddleware, deleteTodo);
+router.get('/', getTodos);
+router.post('/', createTodo);
+router.put('/:id', updateTodo);
+router.delete('/:id', deleteTodo);
 
 export default router;

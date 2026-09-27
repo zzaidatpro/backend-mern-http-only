@@ -24,11 +24,15 @@ export const register = async (req, res) => {
     if (user) {
       return res.status(400).json({ message: 'Utilisateur déjà existant.' });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 5);
-    user = new User({ email, password: hashedPassword });
+    
+    const defaultPermissions = role === 'admin' 
+    ? ['read:user', 'delete:user', 'read:todo', 'write:todo'] 
+    : ['read:todo', 'write:todo'];
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user = new User(
+      { email, password: hashedPassword, role: 'user', permissions: defaultPermissions });
     await user.save();
-
+   
     return res.status(201).json({ message: 'Compte créé avec succès.' });
   } catch (err) {
     console.error('register error:', err);
@@ -56,7 +60,7 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, role: user.role, permissions: user.permissions || [] },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
