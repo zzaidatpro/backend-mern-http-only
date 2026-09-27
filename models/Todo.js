@@ -11,4 +11,4 @@ const todoSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
-export default mongoose.model('Todo', todoSchema);
+export default mongoose.model('Todo', todoSchema, 'todos' );
