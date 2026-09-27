@@ -3,23 +3,31 @@ dotenv.config();
 import mongoose from 'mongoose';
 import app from './app.js';
 
-// 1. Cache de connexion pour le Serverless (Vercel)
+// Cache de connexion pour le Serverless (Vercel)
 let cached = global.mongoose;
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-async function connectDB() {
+// Export de connectDB pour réutilisation si besoin
+export async function connectDB() {
   if (cached.conn) return cached.conn;
+
+  // Utilise MONGODB_URI (fourni par Vercel Storage) ou MONGO_URI
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+
+  if (!uri) {
+    throw new Error("La variable d'environnement MONGODB_URI est introuvable.");
+  }
 
   if (!cached.promise) {
     cached.promise = mongoose
-      .connect(process.env.MONGO_URI, {
-        bufferCommands: false, // Désactive la mise en attente des requêtes si non connecté
-        serverSelectionTimeoutMS: 5000, // Timeout pour la sélection du serveur
+      .connect(uri, {
+        bufferCommands: false, // Désactive le buffering indéfini
+        serverSelectionTimeoutMS: 5000, // Timeout rapide de 5s pour éviter le blocage Vercel (10s)
       })
       .then((mongooseInstance) => {
-        console.log('Connecté à MongoDB Atlas');
+        console.log('Connecté à MongoDB Atlas via Vercel Storage');
         return mongooseInstance;
       });
   }
@@ -27,28 +35,37 @@ async function connectDB() {
   try {
     cached.conn = await cached.promise;
   } catch (e) {
-    // En cas d'échec, on réinitialise la promesse pour réessayer à la prochaine requête
     cached.promise = null;
-    console.error('Erreur de connexion MongoDB Atlas:', e.message);
-    throw e; // On propage l'erreur pour qu'elle soit interceptée par le middleware
+    console.error('Erreur de connexion MongoDB:', e.message);
+    throw e;
   }
 
   return cached.conn;
 }
 
-// 2. Middleware sécurisé avec gestion d'erreur HTTP 500
+// Middleware Express exécuté sur chaque requête
 app.use(async (req, res, next) => {
   try {
     await connectDB();
-    next(); // La BDD est connectée, on passe à la route suivante
+    next();
   } catch (error) {
-    // On intercepte l'erreur et on répond proprement au client
+    console.error('Échec de la connexion BDD dans le middleware:', error.message);
     return res.status(500).json({
       success: false,
-      message: 'Erreur serveur : impossible de se connecter à la base de données.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Impossible de se connecter à la base de données.',
+      error: error.message
     });
   }
 });
+
+// N'exécuter app.listen() qu'en environnement local
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  connectDB().then(() => {
+    app.listen(PORT, () => console.log(`Serveur local démarré sur le port ${PORT}`));
+  }).catch((err) => {
+    console.error('Erreur lors du démarrage du serveur local:', err);
+  });
+}
 
 export default app;
