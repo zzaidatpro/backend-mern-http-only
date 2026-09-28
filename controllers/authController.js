@@ -1,155 +1,159 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import {connectDB} from '../server.js';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  maxAge: 24 * 60 * 60 * 1000,
+  secure: false, // Passer à true en production (HTTPS)
+  sameSite: 'lax',
+  maxAge: 24 * 60 * 60 * 1000, 
+};
+
+export const homePage = (req, res) => {
+  res.json({ message: 'Bienvenue sur Mern Todo React App' });
 };
 
 export const register = async (req, res) => {
   try {
-    connectDB(); // Assurez-vous que la connexion à la base de données est établie
-    console.log("Données reçues dans req.body :", req.body);
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email?.toLowerCase().trim();
 
+    // 1. Vérification de la présence des champs requis
     if (!email || !password) {
       return res.status(400).json({ message: 'Email et mot de passe requis.' });
     }
 
-    let user = await User.findOne({ email });
-    if (user) {
+    // 2. Vérification de l'existence de l'utilisateur
+    if (await User.findOne({ email })) {
       return res.status(400).json({ message: 'Utilisateur déjà existant.' });
     }
-    
-    const defaultPermissions = role === 'admin' 
-    ? ['read:user', 'delete:user', 'read:todo', 'write:todo'] 
-    : ['read:todo', 'write:todo'];
+
+    // 3. Hachage et création
     const hashedPassword = await bcrypt.hash(password, 10);
-    user = new User(
-      { email, password: hashedPassword, role: 'user', permissions: defaultPermissions });
-    await user.save();
-   
-    return res.status(201).json({ message: 'Compte créé avec succès.' });
+    await User.create({ email, password: hashedPassword });
+
+    res.status(201).json({ message: 'Compte créé avec succès.' });
   } catch (err) {
-    console.error('register error:', err);
-    return res.status(500).json({ message: 'Erreur serveur.', error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
 export const login = async (req, res) => {
   try {
-    connectDB();
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email?.toLowerCase().trim();
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email et mot de passe requis.' });
-    }
+    console.log("--- TENTATIVE DE LOGIN ---");
+    console.log("req.body reçu :", req.body);
+    console.log("Email extrait :", email);
 
     const user = await User.findOne({ email });
+    console.log("Utilisateur trouvé en BDD :", user ? "OUI" : "NON");
+
     if (!user) {
-      return res.status(400).json({ message: 'Identifiants invalides.' });
+      console.log("Raison de l'échec : Email inconnu en BDD");
+      return res.status(401).json({ message: 'Identifiants invalides.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Mot de passe valide :", isMatch ? "OUI" : "NON");
+
     if (!isMatch) {
-      return res.status(400).json({ message: 'Identifiants invalides.' });
+      console.log("Raison de l'échec : Le mot de passe ne correspond pas au hash BDD");
+      return res.status(401).json({ message: 'Identifiants invalides.' });
     }
 
+    // ... suite du code (génération du token)
     const token = jwt.sign(
-      { id: user._id, role: user.role, permissions: user.permissions || [] },
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
     res.cookie('token', token, COOKIE_OPTIONS);
-
-    return res.json({
-      user: { id: user._id, email: user.email, role: user.role },
-    });
+    res.json({ user: { id: user._id, email: user.email, role: user.role } });
   } catch (err) {
-    console.error('login error:', err);
-    return res.status(500).json({ message: 'Erreur serveur.' });
+    res.status(500).json({ message: err.message });
   }
 };
 
-export const logout = async (req, res) => {
-  try {
-    connectDB();
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-
-    return res.json({ message: 'Déconnexion réussie.' });
-  } catch (err) {
-    console.error('logout error:', err);
-    return res.status(500).json({ message: 'Erreur serveur lors de la déconnexion.' });
-  }
-};
-
-export const getMe = async (req, res) => {
-  try {
-    connectDB();
-    const userId = req.user?.id ?? req.user?._id;
-    if (!userId) {
-      return res.status(401).json({ message: 'Utilisateur non authentifié.' });
-    }
-
-    const user = await User.findById(userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-    }
-
-    return res.json(user);
-  } catch (err) {
-    console.error('getMe error:', err);
-    return res.status(500).json({ message: 'Erreur serveur lors de la récupération du profil.' });
-  }
+export const logout = (req, res) => {
+  res.clearCookie('token', COOKIE_OPTIONS);
+  res.json({ message: 'Déconnexion réussie.' });
 };
 
 export const getAllUsers = async (req, res) => {
   try {
-    connectDB();
     const users = await User.find({ role: { $ne: 'admin' } }).select('-password');
-    return res.status(200).json(users);
-  } catch (error) {
-    console.error('Erreur getAllUsers :', error);
-    return res
-      .status(500)
-      .json({ message: 'Erreur lors de la récupération des utilisateurs.' });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
 export const deleteUser = async (req, res) => {
   try {
-    connectDB();
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ message: 'Utilisateur non trouvé.' });
-    }
-
-    if (user.role === 'admin') {
-      return res
-        .status(403)
-        .json({ message: 'Impossible de supprimer un compte administrateur.' });
-    }
+    const user = await User.findById(req.params._id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    if (user.role === 'admin') return res.status(403).json({ message: 'Impossible de supprimer un admin.' });
 
     await user.deleteOne();
-    return res
-      .status(200)
-      .json({ message: 'Utilisateur supprimé avec succès.' });
-  } catch (error) {
-    console.error('Erreur deleteUser :', error);
-    return res
-      .status(500)
-      .json({ message: "Erreur lors de la suppression de l'utilisateur." });
+    res.json({ message: 'Utilisateur supprimé.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const email = req.body.email?.toLowerCase().trim();
+
+    const user = await User.findById(req.params._id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    if (user.role === 'admin') return res.status(403).json({ message: 'Impossible de modifier un admin.' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.findByIdAndUpdate(
+      req.params._id,
+      { email, password: hashedPassword },
+      { new: true }
+    );
+
+    res.json({ message: 'Utilisateur mis à jour.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params._id).select('-password');
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const addUser = async (req, res) => {
+  try {
+    const { password, role } = req.body;
+    const email = req.body.email?.toLowerCase().trim();
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email et mot de passe requis.' });
+    }
+
+    if (await User.findOne({ email })) {
+      return res.status(400).json({ message: 'Utilisateur déjà existant.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.create({ email, password: hashedPassword, role });
+
+    res.status(201).json({ message: 'Compte créé avec succès.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

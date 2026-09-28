@@ -8,7 +8,11 @@ const todoSchema = new mongoose.Schema({
     enum: ['Travail', 'Personnel', 'Urgent', 'Divers'], 
     default: 'Divers' 
   },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', // Reference to the User model
+    required: true 
+  }
 }, { timestamps: true });
 
 export default mongoose.model('Todo', todoSchema, 'todos' );
