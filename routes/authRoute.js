@@ -1,37 +1,30 @@
 import express from 'express';
-import { 
-  register, 
-  login,
-  logout, 
-  getAllUsers, 
-  deleteUser,
-  updateUser,
-  getUserById,
-  addUser,
-  homePage } from '../controllers/authController.js';
+//controller :
+import { register, login, logout, homePage 
+} from '../controllers/authController.js';
+import { adminPage, getAllUsers, getUserById, addUser, updateUser, deleteUser 
+} from '../controllers/adminController.js';
+// midleware : 
 import authMiddleware from '../middleware/auth.js';
-
+import { checkRole } from '../middleware/checkRole.js'; //rbac
 
 const router = express.Router();
+// --- Routes publiques ---
 router.get('/', (req, res) => {
-  return res.status(200).json({ message: 'API Auth opérationnelle.' });
-});
-
-
-router.get('/test', (req, res) => {
-  return res.status(200).json({ message: 'Test réussi.' });
-});
-
+  return res.status(200).json({ message: 'reponse API Auth ' });});
 router.get('/home', homePage);
 router.post('/register', register);
 router.post('/login', login);
 
+// Routes protégées pour utilisateurs connectés
 router.post('/logout', authMiddleware, logout);
-router.put('/user/updateUser/:id', authMiddleware, updateUser);
-router.get('/user/getUserById/:id', authMiddleware, getUserById);
-router.post('/user/addUser', authMiddleware, addUser);
-router.get('/user/getAllUsers', authMiddleware, getAllUsers);
-router.delete('/user/deleteAllUsers/:id', authMiddleware, deleteUser);
 
+// Routes admin 
+router.get('/adminPage', authMiddleware, checkRole('admin'), adminPage);
+router.get('/user/getAllUsers', authMiddleware, checkRole('admin'), getAllUsers);
+router.get('/user/getUserById/:id', authMiddleware, checkRole('admin'), getUserById);
+router.post('/user/addUser', authMiddleware, checkRole('admin'), addUser);
+router.put('/user/updateUser/:id', authMiddleware, checkRole('admin'), updateUser);
+router.delete('/user/deleteUser/:id', authMiddleware, checkRole('admin'), deleteUser);
 
 export default router;
