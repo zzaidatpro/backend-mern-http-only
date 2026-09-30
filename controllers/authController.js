@@ -9,10 +9,6 @@ const COOKIE_OPTIONS = {
   maxAge: 24 * 60 * 60 * 1000,
 };
 
-export const homePage = (req, res) => {
-  res.json({ message: 'Bienvenue sur Mern Todo React App' });
-};
-
 export const register = async (req, res) => {
   try {
     const { password } = req.body;
@@ -69,3 +65,15 @@ export const logout = (req, res) => {
   res.clearCookie('token', COOKIE_OPTIONS);
   res.json({ message: 'Déconnexion réussie.' });
 };
+
+export const getProfil = async (req,res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur introuvable.' });
+    }
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}

@@ -6,8 +6,7 @@ export default function authMiddleware(req, res, next) {
     return res.status(401).json({ message: 'Accès non autorisé, jeton manquant' });
   }
   try {
-   console.log("Cookies reçus :", req.cookies);
-   const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; 
     next();
   } catch (err) {
